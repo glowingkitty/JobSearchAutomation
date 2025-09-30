@@ -1,0 +1,28 @@
+# Virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Generated CVs and documents
+/output/
+*.docx
+*.pdf
+
+# Personal data files
+data/master_cv.yaml
+data/personal_cv.yaml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,190 @@
+# Example CV Data Template
+# This is an example template showing the structure for your CV data
+# Copy this file to master_cv.yaml and update with your actual information
+# Then run generate_cv.py to create your CV
+
+# Personal Information
+personal_info:
+  name: "John Doe"
+  email: "john.doe@email.com"
+  phone: "+1 (555) 123-4567"
+  location: "San Francisco, CA"
+  linkedin: "linkedin.com/in/johndoe"
+  website: "johndoe.dev"  # Optional
+  github: "github.com/johndoe"  # Optional
+
+# Professional Summary
+summary: |
+  Experienced software engineer with 5+ years of expertise in full-stack development, 
+  specializing in Python, JavaScript, and cloud technologies. Proven track record of 
+  delivering scalable web applications and leading cross-functional teams. Passionate 
+  about clean code, agile methodologies, and continuous learning.
+
+# Work Experience
+experience:
+  - company: "TechCorp Inc."
+    role: "Senior Software Engineer"
+    location: "San Francisco, CA"
+    start_date: "2022-01"
+    end_date: "Present"
+    description: |
+      Led development of microservices architecture serving 100K+ daily users.
+      Mentored junior developers and established code review processes.
+      Collaborated with product team to define technical requirements.
+    achievements:
+      - "Reduced API response time by 40% through database optimization"
+      - "Implemented CI/CD pipeline reducing deployment time by 60%"
+      - "Led migration from monolithic to microservices architecture"
+    technologies: ["Python", "Django", "PostgreSQL", "Docker", "AWS", "Kubernetes"]
+
+  - company: "StartupXYZ"
+    role: "Full Stack Developer"
+    location: "Remote"
+    start_date: "2020-06"
+    end_date: "2021-12"
+    description: |
+      Developed and maintained web applications using modern JavaScript frameworks.
+      Worked closely with design team to implement responsive user interfaces.
+      Participated in agile development process with 2-week sprints.
+    achievements:
+      - "Built customer dashboard increasing user engagement by 25%"
+      - "Optimized database queries reducing page load time by 30%"
+      - "Implemented automated testing increasing code coverage to 85%"
+    technologies: ["JavaScript", "React", "Node.js", "MongoDB", "Express", "Jest"]
+
+  - company: "WebDev Solutions"
+    role: "Junior Developer"
+    location: "New York, NY"
+    start_date: "2019-01"
+    end_date: "2020-05"
+    description: |
+      Developed responsive websites for small to medium businesses.
+      Collaborated with senior developers on complex features.
+      Maintained and updated existing client websites.
+    achievements:
+      - "Delivered 15+ client projects on time and within budget"
+      - "Improved website performance scores by 20% on average"
+      - "Contributed to internal tooling reducing development time by 15%"
+    technologies: ["HTML", "CSS", "JavaScript", "PHP", "MySQL", "WordPress"]
+
+# Education
+education:
+  - degree: "Bachelor of Science in Computer Science"
+    institution: "University of California, Berkeley"
+    location: "Berkeley, CA"
+    graduation_date: "2018-05"
+    gpa: "3.7"  # Optional
+    relevant_coursework: ["Data Structures", "Algorithms", "Software Engineering", "Database Systems"]
+    honors: "Magna Cum Laude"  # Optional
+
+# Skills organized by categories
+skills:
+  programming_languages:
+    - "Python"
+    - "JavaScript"
+    - "TypeScript"
+    - "Java"
+    - "SQL"
+    - "HTML/CSS"
+  
+  frameworks_libraries:
+    - "Django"
+    - "React"
+    - "Node.js"
+    - "Express"
+    - "Flask"
+    - "Vue.js"
+  
+  databases:
+    - "PostgreSQL"
+    - "MongoDB"
+    - "MySQL"
+    - "Redis"
+  
+  cloud_platforms:
+    - "AWS"
+    - "Google Cloud Platform"
+    - "Docker"
+    - "Kubernetes"
+  
+  tools_technologies:
+    - "Git"
+    - "Docker"
+    - "Jenkins"
+    - "Jest"
+    - "Postman"
+    - "Figma"
+
+# Certifications
+certifications:
+  - name: "AWS Certified Solutions Architect"
+    issuer: "Amazon Web Services"
+    date: "2023-03"
+    credential_id: "AWS-SAA-123456"  # Optional
+  
+  - name: "Certified Scrum Master"
+    issuer: "Scrum Alliance"
+    date: "2022-08"
+    credential_id: "CSM-789012"  # Optional
+
+# Projects (Optional - can highlight key projects)
+projects:
+  - name: "E-commerce Platform"
+    description: "Full-stack e-commerce solution with payment integration"
+    technologies: ["Python", "Django", "React", "PostgreSQL", "Stripe API"]
+    url: "github.com/johndoe/ecommerce-platform"  # Optional
+    date: "2023"
+  
+  - name: "Task Management API"
+    description: "RESTful API for project management with real-time updates"
+    technologies: ["Node.js", "Express", "MongoDB", "Socket.io"]
+    url: "github.com/johndoe/task-api"  # Optional
+    date: "2022"
+
+# Languages (Optional)
+languages:
+  - language: "English"
+    proficiency: "Native"
+  
+  - language: "Spanish"
+    proficiency: "Conversational"
+
+# Additional sections (Optional)
+additional_sections:
+  volunteer:
+    - organization: "Code for America"
+      role: "Volunteer Developer"
+      duration: "2021-Present"
+      description: "Developed web applications for local government transparency"
+  
+  publications:
+    - title: "Building Scalable Web Applications"
+      publication: "Tech Blog"
+      date: "2023-01"
+      url: "johndoe.dev/blog/scalable-web-apps"  # Optional
+
+# CV Configuration
+cv_config:
+  # Template settings
+  font_family: "Arial"  # ATS-friendly fonts: Arial, Calibri, Georgia
+  font_size: 11
+  line_spacing: 1.15
+  
+  # Section ordering (customize the order of sections)
+  section_order:
+    - "personal_info"
+    - "summary"
+    - "experience"
+    - "education"
+    - "skills"
+    - "certifications"
+    - "projects"
+    - "languages"
+    - "additional_sections"
+  
+  # Optional: Hide certain sections
+  hidden_sections: []
+  
+  # File naming
+  filename_prefix: "John_Doe_CV"
+  include_timestamp: true
