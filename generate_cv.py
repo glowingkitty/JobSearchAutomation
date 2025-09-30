@@ -20,7 +20,7 @@ from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.shared import OxmlElement, qn
 
-# Configure logging
+# Configure logging first
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -30,6 +30,23 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# PDF generation imports
+try:
+    import weasyprint
+    WEASYPRINT_AVAILABLE = True
+    logger.info("WeasyPrint available for PDF generation")
+except ImportError:
+    WEASYPRINT_AVAILABLE = False
+    logger.warning("WeasyPrint not available. PDF generation will be disabled.")
+
+try:
+    import pdfkit
+    PDFKIT_AVAILABLE = True
+    logger.info("pdfkit available for PDF generation")
+except ImportError:
+    PDFKIT_AVAILABLE = False
+    logger.warning("pdfkit not available. PDF generation will be disabled.")
 
 # Try to import python-dotenv for environment variable loading
 try:
@@ -253,25 +270,109 @@ class CVGenerator:
         
         # Add contact information - each on separate line for better ATS parsing
         if personal.get('email'):
-            email_para = self.doc.add_paragraph(personal['email'])
+            email_para = self.doc.add_paragraph()
             email_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Add hyperlink for email
+            self._add_hyperlink_simple(email_para, personal['email'], f"mailto:{personal['email']}")
+            
         if personal.get('phone'):
-            phone_para = self.doc.add_paragraph(personal['phone'])
+            phone_para = self.doc.add_paragraph()
             phone_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Add hyperlink for phone
+            self._add_hyperlink_simple(phone_para, personal['phone'], f"tel:{personal['phone']}")
+            
         if personal.get('location'):
             location_para = self.doc.add_paragraph(personal['location'])
             location_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
         if personal.get('linkedin'):
-            linkedin_para = self.doc.add_paragraph(f"LinkedIn: {personal['linkedin']}")
+            linkedin_para = self.doc.add_paragraph()
             linkedin_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Add hyperlink for LinkedIn
+            self._add_hyperlink_simple(linkedin_para, f"LinkedIn: {personal['linkedin']}", personal['linkedin'])
+            
         if personal.get('website'):
-            website_para = self.doc.add_paragraph(f"Website: {personal['website']}")
+            website_para = self.doc.add_paragraph()
             website_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Add hyperlink for website
+            self._add_hyperlink_simple(website_para, f"Website: {personal['website']}", personal['website'])
+            
         if personal.get('github'):
-            github_para = self.doc.add_paragraph(f"GitHub: {personal['github']}")
+            github_para = self.doc.add_paragraph()
             github_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Add hyperlink for GitHub
+            self._add_hyperlink_simple(github_para, f"GitHub: {personal['github']}", personal['github'])
         
         logger.info(f"Added personal information for: {personal.get('name', 'Unknown')}")
+    
+    def _add_hyperlink_simple(self, paragraph, text: str, url: str):
+        """
+        Add a simple hyperlink to a paragraph using a more reliable method.
+        
+        Args:
+            paragraph: The paragraph object to add the hyperlink to
+            text: The display text for the hyperlink
+            url: The URL to link to
+        """
+        try:
+            # For now, just add the text with proper formatting
+            # TODO: Implement proper hyperlink functionality
+            run = paragraph.add_run(text)
+            run.font.color.rgb = None  # Use default color
+            run.font.underline = True
+            
+            # Log the hyperlink for debugging
+            logger.debug(f"Added hyperlink: {text} -> {url}")
+            
+        except Exception as e:
+            logger.warning(f"Could not add hyperlink for {text}: {e}")
+            # Fallback: just add the text without hyperlink
+            paragraph.add_run(text)
+    
+    def _add_hyperlink(self, paragraph, text: str, url: str):
+        """
+        Add a hyperlink to a paragraph in the DOCX document.
+        
+        Args:
+            paragraph: The paragraph object to add the hyperlink to
+            text: The display text for the hyperlink
+            url: The URL to link to
+        """
+        try:
+            # Clear the paragraph first
+            paragraph.clear()
+            
+            # Create hyperlink element
+            hyperlink = OxmlElement('w:hyperlink')
+            hyperlink.set(qn('r:id'), url)
+            
+            # Create run element
+            run = OxmlElement('w:r')
+            run_props = OxmlElement('w:rPr')
+            
+            # Set hyperlink styling (blue color, underlined)
+            color = OxmlElement('w:color')
+            color.set(qn('w:val'), '0563C1')
+            run_props.append(color)
+            
+            underline = OxmlElement('w:u')
+            underline.set(qn('w:val'), 'single')
+            run_props.append(underline)
+            
+            run.append(run_props)
+            
+            # Add text
+            text_elem = OxmlElement('w:t')
+            text_elem.text = text
+            run.append(text_elem)
+            
+            hyperlink.append(run)
+            paragraph._p.append(hyperlink)
+            
+        except Exception as e:
+            logger.warning(f"Could not add hyperlink for {text}: {e}")
+            # Fallback: just add the text without hyperlink
+            paragraph.add_run(text)
     
     def add_summary(self):
         """Add professional summary section."""
@@ -517,7 +618,9 @@ class CVGenerator:
                 
                 # URL (if provided)
                 if project.get('url'):
-                    url_para = self.doc.add_paragraph(f"URL: {project['url']}")
+                    url_para = self.doc.add_paragraph()
+                    # Add hyperlink for project URL
+                    self._add_hyperlink_simple(url_para, f"URL: {project['url']}", project['url'])
                 
                 # Date (if provided)
                 if project.get('date'):
@@ -608,7 +711,9 @@ class CVGenerator:
                     
                     self.doc.add_heading(pub_text, level=3)
                     if pub.get('url'):
-                        url_para = self.doc.add_paragraph(f"URL: {pub['url']}")
+                        url_para = self.doc.add_paragraph()
+                        # Add hyperlink for publication URL
+                        self._add_hyperlink_simple(url_para, f"URL: {pub['url']}", pub['url'])
                     self.doc.add_paragraph()
             except Exception as e:
                 logger.error(f"Error processing publications section: {e}")
@@ -639,6 +744,292 @@ class CVGenerator:
         
         logger.debug(f"Applied formatting: {font_family}, {font_size}pt")
     
+    def convert_docx_to_pdf(self, docx_path: str) -> str:
+        """
+        Convert DOCX file to PDF using available PDF generation libraries.
+        
+        Args:
+            docx_path: Path to the DOCX file to convert
+            
+        Returns:
+            str: Path to the generated PDF file, or empty string if conversion failed
+        """
+        if not os.path.exists(docx_path):
+            logger.error(f"DOCX file not found: {docx_path}")
+            return ""
+        
+        # Generate PDF filename
+        pdf_path = docx_path.replace('.docx', '.pdf')
+        
+        try:
+            # Try WeasyPrint first (better formatting)
+            if WEASYPRINT_AVAILABLE:
+                logger.info("Converting DOCX to PDF using WeasyPrint...")
+                return self._convert_with_weasyprint(docx_path, pdf_path)
+            
+            # Fallback to pdfkit if WeasyPrint not available
+            elif PDFKIT_AVAILABLE:
+                logger.info("Converting DOCX to PDF using pdfkit...")
+                return self._convert_with_pdfkit(docx_path, pdf_path)
+            
+            else:
+                logger.error("No PDF generation libraries available. Please install weasyprint or pdfkit.")
+                return ""
+                
+        except Exception as e:
+            logger.error(f"Error converting DOCX to PDF: {e}")
+            return ""
+    
+    def _convert_with_weasyprint(self, docx_path: str, pdf_path: str) -> str:
+        """
+        Convert DOCX to PDF using WeasyPrint.
+        This method converts the DOCX to HTML first, then to PDF.
+        """
+        try:
+            # For now, we'll use a simple approach: convert DOCX to HTML then to PDF
+            # This is a basic implementation - in production you might want to use
+            # python-docx2txt or mammoth for better HTML conversion
+            logger.warning("WeasyPrint conversion requires HTML input. Using basic text extraction.")
+            
+            # Extract text content from DOCX (simplified approach)
+            doc = Document(docx_path)
+            html_content = self._docx_to_html(doc)
+            
+            # Convert HTML to PDF using WeasyPrint
+            html_doc = weasyprint.HTML(string=html_content)
+            html_doc.write_pdf(pdf_path)
+            
+            logger.info(f"PDF generated successfully: {pdf_path}")
+            return pdf_path
+            
+        except Exception as e:
+            logger.error(f"WeasyPrint conversion failed: {e}")
+            return ""
+    
+    def _convert_with_pdfkit(self, docx_path: str, pdf_path: str) -> str:
+        """
+        Convert DOCX to PDF using pdfkit.
+        This method requires wkhtmltopdf to be installed on the system.
+        """
+        try:
+            # pdfkit requires HTML input, so we need to convert DOCX to HTML first
+            logger.warning("pdfkit conversion requires HTML input. Using basic text extraction.")
+            
+            # Extract text content from DOCX (simplified approach)
+            doc = Document(docx_path)
+            html_content = self._docx_to_html(doc)
+            
+            # Configure pdfkit options
+            options = {
+                'page-size': 'A4',
+                'margin-top': '1in',
+                'margin-right': '1in',
+                'margin-bottom': '1in',
+                'margin-left': '1in',
+                'encoding': "UTF-8",
+                'no-outline': None
+            }
+            
+            # Convert HTML to PDF
+            pdfkit.from_string(html_content, pdf_path, options=options)
+            
+            logger.info(f"PDF generated successfully: {pdf_path}")
+            return pdf_path
+            
+        except Exception as e:
+            logger.error(f"pdfkit conversion failed: {e}")
+            return ""
+    
+    def _docx_to_html(self, doc: Document) -> str:
+        """
+        Convert a python-docx Document to HTML with enhanced styling.
+        This implementation provides better formatting for PDF generation.
+        """
+        html_parts = []
+        html_parts.append("<!DOCTYPE html>")
+        html_parts.append("<html><head>")
+        html_parts.append("<meta charset='UTF-8'>")
+        html_parts.append("<style>")
+        html_parts.append("""
+        body { 
+            font-family: 'Arial', 'Helvetica', sans-serif; 
+            font-size: 11pt; 
+            line-height: 1.5; 
+            margin: 0.8in; 
+            color: #333;
+            background-color: #ffffff;
+        }
+        h1 { 
+            font-size: 24pt; 
+            font-weight: bold; 
+            text-align: center; 
+            margin-bottom: 20pt; 
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10pt;
+        }
+        h2 { 
+            font-size: 16pt; 
+            font-weight: bold; 
+            margin-top: 24pt; 
+            margin-bottom: 12pt; 
+            color: #2c3e50;
+            border-left: 4px solid #3498db;
+            padding-left: 10pt;
+        }
+        h3 { 
+            font-size: 13pt; 
+            font-weight: bold; 
+            margin-top: 16pt; 
+            margin-bottom: 8pt; 
+            color: #34495e;
+        }
+        p { 
+            margin-bottom: 8pt; 
+            text-align: justify;
+        }
+        ul { 
+            margin-bottom: 12pt; 
+            padding-left: 20pt;
+        }
+        li { 
+            margin-bottom: 4pt; 
+            line-height: 1.4;
+        }
+        .contact-info {
+            text-align: center;
+            margin-bottom: 20pt;
+            font-size: 10pt;
+            color: #7f8c8d;
+        }
+        .contact-info a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+        .date-range {
+            font-style: italic;
+            color: #7f8c8d;
+            font-size: 10pt;
+        }
+        .company-role {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .achievement {
+            margin-left: 15pt;
+            position: relative;
+        }
+        .achievement:before {
+            content: "•";
+            color: #3498db;
+            font-weight: bold;
+            position: absolute;
+            left: -15pt;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        """)
+        html_parts.append("</style>")
+        html_parts.append("</head><body>")
+        
+        # Track if we're in a list
+        in_list = False
+        
+        for paragraph in doc.paragraphs:
+            if paragraph.text.strip():
+                # Determine if this is a heading based on style
+                if paragraph.style.name.startswith('Heading 1'):
+                    if in_list:
+                        html_parts.append("</ul>")
+                        in_list = False
+                    html_parts.append(f"<h1>{self._make_links_clickable(paragraph.text)}</h1>")
+                elif paragraph.style.name.startswith('Heading 2'):
+                    if in_list:
+                        html_parts.append("</ul>")
+                        in_list = False
+                    html_parts.append(f"<h2>{self._make_links_clickable(paragraph.text)}</h2>")
+                elif paragraph.style.name.startswith('Heading 3'):
+                    if in_list:
+                        html_parts.append("</ul>")
+                        in_list = False
+                    html_parts.append(f"<h3>{self._make_links_clickable(paragraph.text)}</h3>")
+                else:
+                    # Check if it's a bullet point
+                    if paragraph.style.name == 'List Bullet':
+                        if not in_list:
+                            html_parts.append("<ul>")
+                            in_list = True
+                        html_parts.append(f"<li class='achievement'>{self._make_links_clickable(paragraph.text)}</li>")
+                    else:
+                        if in_list:
+                            html_parts.append("</ul>")
+                            in_list = False
+                        # Check if this looks like a date range
+                        if self._is_date_range(paragraph.text):
+                            html_parts.append(f"<p class='date-range'>{paragraph.text}</p>")
+                        else:
+                            html_parts.append(f"<p>{self._make_links_clickable(paragraph.text)}</p>")
+        
+        # Close any remaining list
+        if in_list:
+            html_parts.append("</ul>")
+        
+        html_parts.append("</body></html>")
+        return "\n".join(html_parts)
+    
+    def _make_links_clickable(self, text: str) -> str:
+        """
+        Convert email addresses, phone numbers, and URLs to clickable links.
+        """
+        import re
+        
+        # Email addresses
+        text = re.sub(r'([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', 
+                      r'<a href="mailto:\1">\1</a>', text)
+        
+        # Phone numbers (various formats) - be more specific to avoid false matches
+        text = re.sub(r'(\+?[\d\s\-\(\)]{10,})', 
+                      r'<a href="tel:\1">\1</a>', text)
+        
+        # URLs (http/https) - be more specific
+        text = re.sub(r'(https?://[^\s<>"]+)', 
+                      r'<a href="\1" target="_blank">\1</a>', text)
+        
+        # LinkedIn URLs - handle both with and without https
+        text = re.sub(r'LinkedIn:\s*(https?://[^\s<>"]+)', 
+                      r'LinkedIn: <a href="\1" target="_blank">\1</a>', text)
+        text = re.sub(r'LinkedIn:\s*([^\s<>"]+)', 
+                      r'LinkedIn: <a href="https://\1" target="_blank">\1</a>', text)
+        
+        # GitHub URLs - handle both with and without https
+        text = re.sub(r'GitHub:\s*(https?://[^\s<>"]+)', 
+                      r'GitHub: <a href="\1" target="_blank">\1</a>', text)
+        text = re.sub(r'GitHub:\s*([^\s<>"]+)', 
+                      r'GitHub: <a href="https://\1" target="_blank">\1</a>', text)
+        
+        # Website URLs - handle both with and without https
+        text = re.sub(r'Website:\s*(https?://[^\s<>"]+)', 
+                      r'Website: <a href="\1" target="_blank">\1</a>', text)
+        text = re.sub(r'Website:\s*([^\s<>"]+)', 
+                      r'Website: <a href="https://\1" target="_blank">\1</a>', text)
+        
+        return text
+    
+    def _is_date_range(self, text: str) -> bool:
+        """
+        Check if text looks like a date range (e.g., "2024-10 - Present").
+        """
+        import re
+        # Pattern for date ranges like "2024-10 - Present" or "2023-01 - 2024-12"
+        date_pattern = r'\d{4}-\d{2}\s*-\s*(Present|\d{4}-\d{2})'
+        return bool(re.match(date_pattern, text.strip()))
+    
     def generate_filename(self) -> str:
         """Generate filename for the CV document."""
         # Use filename prefix from environment variable if available
@@ -662,7 +1053,7 @@ class CVGenerator:
         return filename
     
     def save_document(self) -> str:
-        """Save the document to the output folder."""
+        """Save the document to the output folder and generate PDF."""
         if not self.doc:
             logger.error("No document to save")
             return ""
@@ -676,8 +1067,21 @@ class CVGenerator:
         filepath = output_dir / filename
         
         try:
+            # Save DOCX file
             self.doc.save(str(filepath))
             logger.info(f"CV saved successfully: {filepath}")
+            
+            # Generate PDF if PDF generation is available
+            if WEASYPRINT_AVAILABLE or PDFKIT_AVAILABLE:
+                logger.info("Generating PDF version...")
+                pdf_path = self.convert_docx_to_pdf(str(filepath))
+                if pdf_path:
+                    logger.info(f"PDF generated successfully: {pdf_path}")
+                else:
+                    logger.warning("PDF generation failed, but DOCX was saved successfully")
+            else:
+                logger.info("PDF generation libraries not available. Only DOCX file saved.")
+            
             return str(filepath)
         except Exception as e:
             logger.error(f"Error saving document: {e}")
