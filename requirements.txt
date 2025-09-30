@@ -1,7 +1,5 @@
-# Core dependencies for CV generation
-python-docx==1.2.0
-PyYAML==6.0.3
-
-# Dependencies for python-docx
 lxml==6.0.2
+python-docx==1.2.0
+python-dotenv==1.1.1
+PyYAML==6.0.3
 typing_extensions==4.15.0

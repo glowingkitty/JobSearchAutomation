@@ -87,16 +87,35 @@ The generated CV will be saved in the `output/` directory with a timestamp.
 
 The YAML file should contain the following sections:
 
-### Personal Information
-```yaml
-personal_info:
-  name: "Your Name"
-  email: "your.email@example.com"
-  phone: "+1 (555) 123-4567"
-  location: "City, State"
-  linkedin: "linkedin.com/in/yourprofile"
-  website: "yourwebsite.com"  # Optional
-  github: "github.com/yourusername"  # Optional
+### Personal Information (Environment Variables)
+Personal information is now loaded from environment variables for better security and flexibility. 
+
+**Setup:**
+1. Copy `personal_info.env.example` to `personal_info.env`
+2. Update the values in `personal_info.env` with your actual information
+
+**Required Environment Variables:**
+- `CV_NAME`: Your full name
+- `CV_EMAIL`: Your email address
+
+**Optional Environment Variables:**
+- `CV_PHONE`: Your phone number
+- `CV_LOCATION`: Your location (city, state/country)
+- `CV_LINKEDIN`: Your LinkedIn profile URL
+- `CV_WEBSITE`: Your personal website
+- `CV_GITHUB`: Your GitHub profile URL
+- `CV_FILENAME_PREFIX`: Custom filename prefix for generated CVs
+
+**Example personal_info.env:**
+```bash
+CV_NAME="John Doe"
+CV_EMAIL="john.doe@email.com"
+CV_PHONE="+1 (555) 123-4567"
+CV_LOCATION="San Francisco, CA"
+CV_LINKEDIN="linkedin.com/in/johndoe"
+CV_WEBSITE="johndoe.dev"
+CV_GITHUB="github.com/johndoe"
+CV_FILENAME_PREFIX="John_Doe_CV"
 ```
 
 ### Professional Summary
@@ -171,13 +190,11 @@ cv_config:
   font_family: "Arial"  # ATS-friendly fonts: Arial, Calibri, Georgia
   font_size: 11
   section_order:
-    - "personal_info"
     - "summary"
     - "experience"
     - "education"
     - "skills"
     - "certifications"
-  filename_prefix: "Your_Name_CV"
   include_timestamp: true
 ```
 
@@ -210,7 +227,6 @@ Modify the `section_order` in your YAML file to change the order of sections:
 ```yaml
 cv_config:
   section_order:
-    - "personal_info"
     - "summary"
     - "experience"
     - "skills"  # Move skills before education
@@ -260,11 +276,14 @@ The script generates detailed logs in `cv_generation.log` and console output:
    ```
    **Solution**: Check your YAML syntax. Use a YAML validator online.
 
-3. **Missing required fields**
+3. **Missing personal information**
    ```
-   Warning: No personal information found in YAML data
+   Missing required personal information from environment: name, email
    ```
-   **Solution**: Ensure your YAML file has the required sections.
+   **Solution**: 
+   - Copy `personal_info.env.example` to `personal_info.env`
+   - Update `CV_NAME` and `CV_EMAIL` in `personal_info.env`
+   - Or set environment variables manually: `export CV_NAME="Your Name"` and `export CV_EMAIL="your@email.com"`
 
 ### Debug Mode
 

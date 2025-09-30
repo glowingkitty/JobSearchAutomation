@@ -31,6 +31,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Try to import python-dotenv for environment variable loading
+try:
+    from dotenv import load_dotenv
+    DOTENV_AVAILABLE = True
+except ImportError:
+    DOTENV_AVAILABLE = False
+    logger.warning("python-dotenv not available. Environment variables must be set manually.")
+
 
 class CVGenerator:
     """
@@ -49,8 +57,52 @@ class CVGenerator:
         self.data = None
         self.doc = None
         self.config = {}
+        self.personal_info = {}
         
         logger.info(f"Initializing CV generator with file: {yaml_file}")
+        
+        # Load environment variables for personal information
+        self.load_personal_info_from_env()
+    
+    def load_personal_info_from_env(self):
+        """
+        Load personal information from environment variables.
+        First tries to load from personal_info.env file, then falls back to system env vars.
+        """
+        # Try to load from personal_info.env file first
+        env_file = "personal_info.env"
+        if os.path.exists(env_file):
+            if DOTENV_AVAILABLE:
+                load_dotenv(env_file)
+                logger.info(f"Loaded environment variables from {env_file}")
+            else:
+                logger.warning(f"Found {env_file} but python-dotenv not available. Please install it or set environment variables manually.")
+        else:
+            logger.info(f"No {env_file} file found, using system environment variables")
+        
+        # Load personal information from environment variables
+        self.personal_info = {
+            'name': os.getenv('CV_NAME', ''),
+            'email': os.getenv('CV_EMAIL', ''),
+            'phone': os.getenv('CV_PHONE', ''),
+            'location': os.getenv('CV_LOCATION', ''),
+            'linkedin': os.getenv('CV_LINKEDIN', ''),
+            'website': os.getenv('CV_WEBSITE', ''),
+            'github': os.getenv('CV_GITHUB', '')
+        }
+        
+        # Validate required fields
+        required_fields = ['name', 'email']
+        missing_fields = [field for field in required_fields if not self.personal_info[field]]
+        
+        if missing_fields:
+            logger.error(f"Missing required personal information: {', '.join(missing_fields)}")
+            logger.error("Please set the following environment variables:")
+            for field in missing_fields:
+                logger.error(f"  CV_{field.upper()}")
+            logger.error("Or create a personal_info.env file with these values.")
+        else:
+            logger.info("Personal information loaded successfully from environment variables")
     
     def validate_yaml_structure(self) -> bool:
         """
@@ -61,22 +113,18 @@ class CVGenerator:
         """
         errors = []
         
-        # Check required sections
-        required_sections = ['personal_info']
+        # Check required sections (personal_info is now loaded from environment variables)
+        required_sections = []
         for section in required_sections:
             if section not in self.data:
                 errors.append(f"Missing required section: '{section}'")
         
-        # Validate personal_info structure
-        if 'personal_info' in self.data:
-            personal = self.data['personal_info']
-            if not isinstance(personal, dict):
-                errors.append("'personal_info' must be a dictionary")
-            else:
-                required_fields = ['name', 'email']
-                for field in required_fields:
-                    if field not in personal or not personal[field]:
-                        errors.append(f"Missing required field in personal_info: '{field}'")
+        # Personal information is now loaded from environment variables
+        # Validate that we have the required personal info from environment
+        required_personal_fields = ['name', 'email']
+        missing_personal_fields = [field for field in required_personal_fields if not self.personal_info.get(field)]
+        if missing_personal_fields:
+            errors.append(f"Missing required personal information from environment: {', '.join(missing_personal_fields)}")
         
         # Validate list sections (experience, education, projects, languages, certifications)
         list_sections = ['experience', 'education', 'projects', 'languages', 'certifications']
@@ -193,11 +241,11 @@ class CVGenerator:
     
     def add_personal_info(self):
         """Add personal information section to the document."""
-        if 'personal_info' not in self.data:
-            logger.warning("No personal information found in YAML data")
+        if not self.personal_info:
+            logger.warning("No personal information found in environment variables")
             return
         
-        personal = self.data['personal_info']
+        personal = self.personal_info
         
         # Add name as main heading
         name_para = self.doc.add_heading(personal.get('name', ''), level=1)
@@ -593,8 +641,13 @@ class CVGenerator:
     
     def generate_filename(self) -> str:
         """Generate filename for the CV document."""
-        personal = self.data.get('personal_info', {})
-        name = personal.get('name', 'CV').replace(' ', '_')
+        # Use filename prefix from environment variable if available
+        filename_prefix = os.getenv('CV_FILENAME_PREFIX', '')
+        if filename_prefix:
+            name = filename_prefix.replace(' ', '_')
+        else:
+            # Fall back to name from personal info
+            name = self.personal_info.get('name', 'CV').replace(' ', '_')
         
         # Get filename prefix from config
         prefix = self.config.get('filename_prefix', name)

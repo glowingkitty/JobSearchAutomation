@@ -3,15 +3,10 @@
 # Copy this file to master_cv.yaml and update with your actual information
 # Then run generate_cv.py to create your CV
 
-# Personal Information
-personal_info:
-  name: "John Doe"
-  email: "john.doe@email.com"
-  phone: "+1 (555) 123-4567"
-  location: "San Francisco, CA"
-  linkedin: "linkedin.com/in/johndoe"
-  website: "johndoe.dev"  # Optional
-  github: "github.com/johndoe"  # Optional
+# NOTE: Personal Information is now loaded from environment variables
+# Copy personal_info.env.example to personal_info.env and update with your details
+# Required environment variables: CV_NAME, CV_EMAIL
+# Optional: CV_PHONE, CV_LOCATION, CV_LINKEDIN, CV_WEBSITE, CV_GITHUB, CV_FILENAME_PREFIX
 
 # Professional Summary
 summary: |
@@ -185,6 +180,5 @@ cv_config:
   # Optional: Hide certain sections
   hidden_sections: []
   
-  # File naming
-  filename_prefix: "John_Doe_CV"
+  # File naming (filename_prefix now set via CV_FILENAME_PREFIX environment variable)
   include_timestamp: true
