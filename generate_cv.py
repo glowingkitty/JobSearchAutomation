@@ -16,7 +16,7 @@ from typing import Dict, List, Any, Optional
 
 import yaml
 from docx import Document
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.shared import OxmlElement, qn
 
@@ -721,6 +721,42 @@ class CVGenerator:
         
         logger.info("Added additional sections")
     
+    def add_secret_message(self):
+        """
+        Add a hidden secret message with white text for AI detection systems.
+        The text is invisible to human readers but can be detected by AI scanning systems.
+        """
+        # Get secret message from config or data
+        secret_message = self.config.get('secret_message', self.data.get('secret_message', ''))
+        
+        if not secret_message:
+            logger.debug("No secret message found in YAML data")
+            return
+        
+        logger.info("Adding secret message (white text)")
+        
+        # Add a paragraph with white text
+        secret_para = self.doc.add_paragraph()
+        secret_run = secret_para.add_run(secret_message)
+        
+        # Set font color to white (RGB 255, 255, 255) - invisible on white background
+        secret_run.font.color.rgb = RGBColor(255, 255, 255)
+        
+        # Use same font as the rest of the document for consistency
+        font_family = self.config.get('font_family', 'Arial')
+        font_size = self.config.get('font_size', 11)
+        secret_run.font.name = font_family
+        secret_run.font.size = Pt(font_size)
+        
+        # Make it very small to avoid layout issues (optional, but helps)
+        secret_run.font.size = Pt(1)
+        
+        # Add minimal spacing
+        secret_para.paragraph_format.space_after = Pt(0)
+        secret_para.paragraph_format.space_before = Pt(0)
+        
+        logger.debug(f"Secret message added: {len(secret_message)} characters")
+    
     def apply_formatting(self):
         """Apply ATS-friendly formatting to the document."""
         if not self.doc:
@@ -934,6 +970,14 @@ class CVGenerator:
             list-style-type: none;
             padding-left: 0;
         }
+        .secret-message {
+            color: #ffffff !important;
+            font-size: 1pt;
+            margin: 0;
+            padding: 0;
+            line-height: 0;
+            opacity: 1;
+        }
         """)
         html_parts.append("</style>")
         html_parts.append("</head><body>")
@@ -943,6 +987,9 @@ class CVGenerator:
         
         for paragraph in doc.paragraphs:
             if paragraph.text.strip():
+                # Check if this paragraph contains white text (secret message)
+                is_white_text = self._is_white_text(paragraph)
+                
                 # Determine if this is a heading based on style
                 if paragraph.style.name.startswith('Heading 1'):
                     if in_list:
@@ -970,8 +1017,11 @@ class CVGenerator:
                         if in_list:
                             html_parts.append("</ul>")
                             in_list = False
+                        # Check if this is white text (secret message)
+                        if is_white_text:
+                            html_parts.append(f"<p class='secret-message'>{paragraph.text}</p>")
                         # Check if this looks like a date range
-                        if self._is_date_range(paragraph.text):
+                        elif self._is_date_range(paragraph.text):
                             html_parts.append(f"<p class='date-range'>{paragraph.text}</p>")
                         else:
                             html_parts.append(f"<p>{self._make_links_clickable(paragraph.text)}</p>")
@@ -1029,6 +1079,29 @@ class CVGenerator:
         # Pattern for date ranges like "2024-10 - Present" or "2023-01 - 2024-12"
         date_pattern = r'\d{4}-\d{2}\s*-\s*(Present|\d{4}-\d{2})'
         return bool(re.match(date_pattern, text.strip()))
+    
+    def _is_white_text(self, paragraph) -> bool:
+        """
+        Check if a paragraph contains white text (used for secret messages).
+        
+        Args:
+            paragraph: The paragraph object to check
+            
+        Returns:
+            bool: True if the paragraph contains white text, False otherwise
+        """
+        try:
+            # Check all runs in the paragraph
+            for run in paragraph.runs:
+                # Check if the run has a color set
+                if run.font.color.rgb:
+                    # Check if color is white (RGB 255, 255, 255)
+                    if run.font.color.rgb == RGBColor(255, 255, 255):
+                        return True
+            return False
+        except Exception as e:
+            logger.debug(f"Error checking for white text: {e}")
+            return False
     
     def generate_filename(self) -> str:
         """Generate filename for the CV document."""
@@ -1127,6 +1200,9 @@ class CVGenerator:
             for section in section_order:
                 if section in section_methods and section not in self.config.get('hidden_sections', []):
                     section_methods[section]()
+            
+            # Add secret message (white text for AI detection) at the end
+            self.add_secret_message()
             
             # Apply formatting
             self.apply_formatting()

@@ -46,6 +46,13 @@ Create a foundational script that generates a professional, ATS-friendly CV in D
 - Allow easy modification of fonts, sizes, colors
 - Maintain consistent formatting throughout document
 
+#### FR1.5: Secret Message for AI Systems
+- Support hidden text for AI detection systems
+- Text must be invisible to human readers (white text on white background)
+- Must work in both DOCX and PDF formats
+- Text should be detectable by AI scanning systems but not visible to humans
+- Include configurable secret message in YAML data structure
+
 ### Technical Requirements
 
 #### TR1.1: Dependencies
